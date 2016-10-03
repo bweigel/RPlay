@@ -1,0 +1,138 @@
+---
+title: "Untitled"
+output:
+  html_document:
+        toc: true
+        toc_float: true
+        number_sections: true
+        theme: 'united'
+        highlight: 'tango'
+        fig_width: 10
+        fig_height: 6
+        fig_caption: true
+        code_folding: hide
+        css: css/styles.css
+---
+
+This document was generated on `r Sys.Date()`.
+
+```{r knitropt, echo=F}
+knitr::opts_chunk$set(echo=T, message=F, warning=F, error=T, fig.width=10, fig.height=10)
+```
+
+```{r packages}
+library(dplyr)
+library(ggplot2)
+library(stringr)
+```
+
+
+Intro {.tabset .tabset-fade .tabset-pills}
+=========================================================
+
+## Implementation of helper functions
+
+```{r}
+# this function takes a step
+takestep <- function(step = 1){
+  sample(c(step, -step), 1)
+}
+
+# this function generates the walk
+walk <- function(dimensions = 2, step = 1, steps = 1000){
+  require(magrittr)
+  tmp <- 1:steps
+  tmp <- sapply(tmp, function(x) {
+    sample(c(rep(0, dimensions-1), takestep(step)), 
+           dimensions, replace = F)
+    }) %>% matrix(., ncol=dimensions, byrow = T)
+  #tmp <- rbind(rep(0, dimensions), tmp)
+  apply(tmp, 2, cumsum)
+}
+
+# this is for plotting
+plotwalk <- function(mat, dim=c(1,2)){
+  if(ncol(mat) == 1) {
+    plot(mat[,1], type="s", xlab="step", ylab="Dimension 1")
+  } else {
+    plot(mat[,dim], type="s", xlab=paste("Dimension", dim[1]), 
+         ylab=paste("Dimension", dim[2]))
+    points(mat[,dim][1, 1], mat[,dim][1, 2], pch=17)
+    points(mat[,dim][nrow(mat), 1],mat[,dim][nrow(mat), 2], pch=19)
+  }
+}
+
+# sampling from desiscion matrix
+walk2 <- function(n,m){
+  tmp <- sample(n*m, size=1)
+  ro <- ceiling(tmp/m)
+  col <- tmp%%m+m*!as.logical(tmp%%m)
+  
+  f.in <- function(mat = NULL, retin = F){
+    if(retin) return(c(ro, col))
+    if(is.null(mat)) mat <- matrix(rep(c(1,-1), m), ncol=m)
+    
+    tmp.V <- rep(0, m)    
+    tmp.V[col] <- mat[ro, col]
+    return(tmp.V)
+    
+  }
+  return(f.in)
+}
+```
+
+
+Some random walks {.tabset .tabset-fade .tabset-pills}
+=========================================================
+
+## One dimensional walk
+
+```{r}
+w.1d <- walk(dimensions = 1)
+plotwalk(w.1d)
+```
+
+## Two dimensional walk
+
+```{r}
+w.2d <- walk(dimensions = 2)
+plotwalk(w.2d)
+```
+
+## Three dimensional walk
+
+```{r}
+library(plot3D)
+w.3d <- walk(dimensions = 3)
+
+par(mfrow=c(2,2))
+plotwalk(w.3d)
+plotwalk(w.3d, dim = c(1,3))
+plotwalk(w.3d, dim = c(2,3))
+
+par(mfrow=c(1,1))
+plot3D::lines3D(w.3d[,1], w.3d[,2], w.3d[,3], colkey=F)
+points3D(w.3d[1,1], w.3d[1,2], w.3d[1,3], pch=17, col="blue", add=T)
+points3D(w.3d[nrow(w.3d),1], w.3d[nrow(w.3d),2], w.3d[nrow(w.3d),3], pch=19, add=T, col="red")
+```
+
+Benchmarking
+===============================
+
+```{r}
+library(microbenchmark)
+
+f1 <- walk2
+f2 <- function(steps){
+  for(i in 1: steps){
+    
+  }
+}
+steps <- 1000
+u <- 4
+tmp <- 1:steps
+mat <- matrix(rep(c(1,-1), u), ncol=u)
+microbenchmark(sapply(1:steps, function(x) f1(2,u)()), sapply(1:steps, function(x) f1(2,u)(mat)), walk(u, steps = steps), times = 1000) %>% autoplot()
+ 
+```
+
