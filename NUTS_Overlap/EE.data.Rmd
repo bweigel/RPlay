@@ -1,0 +1,32 @@
+---
+output:
+  knitrBootstrap::bootstrap_document:
+    theme.chooser: TRUE
+    highlight.chooser: TRUE
+---
+
+```{r knitr_prep}
+knitr::opts_chunk$set(echo=F, message=F, error=F, warning=F, fig.height=15, fig.width=15)
+```
+
+
+```{r data}
+library(ggplot2)
+library(dplyr)
+load("EE_Data.RDa")
+```
+
+# Entwicklung der Erneuerbaren Energien in Deutschland
+
+```{r plot1,  cache=FALSE}
+EE2 <- EE %>% group_by(Bundesland, Energie, Zeitpunkt.der.Inbetriebnahme) %>%
+  summarise(Leistung.kW = sum(Leistung.kW)) %>% ungroup() %>% group_by(Bundesland, Energie) %>%
+  mutate(leistung = cumsum(Leistung.kW)) %>% ungroup()
+
+ggplot(EE2 %>% filter(Zeitpunkt.der.Inbetriebnahme >= "2000-01-01"), aes(x=Zeitpunkt.der.Inbetriebnahme, y=leistung*1e-6, fill=Energie)) + 
+  geom_area(stat = "identity", position = "stack", color="black", size=0.2) +
+  facet_wrap(~Bundesland, ncol=4) +
+  labs(y="Leistung (GW)")
+```
+
+
