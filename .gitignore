@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Creating-maps-in-R-master
 Creating-maps-in-R-master/*
 coursera-dl
@@ -14,3 +15,38 @@ cache_files/*
 *.pdf
 *.Rproj
 .*
+=======
+# History files
+.Rhistory
+.Rapp.history
+
+# Session Data files
+.RData
+
+# Example code in package build process
+*-Ex.R
+
+# Output files from R CMD build
+/*.tar.gz
+
+# Output files from R CMD check
+/*.Rcheck/
+
+# RStudio files
+.Rproj.user/
+
+# produced vignettes
+vignettes/*.html
+vignettes/*.pdf
+
+# OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
+.httr-oauth
+
+# knitr and R markdown default cache directories
+/*_cache/
+/cache/
+
+# Temporary files created by R markdown
+*.utf8.md
+*.knit.md
+>>>>>>> 5231af9ca82f89b0dc2c22ad2b0726b27c5a92c0
