@@ -1,0 +1,16 @@
+Creating-maps-in-R-master
+Creating-maps-in-R-master/*
+coursera-dl
+coursera-dl/*
+nwc.csR
+nwc.csR/*
+.Rproj*
+.RData
+.Rhistory
+cache_files
+cache_files/*
+*cache*
+*.html
+*.pdf
+*.Rproj
+.*
