@@ -1,0 +1,130 @@
+---
+title: "Tufte Handout"
+author: "John Smith"
+date: "August 13th, 2014"
+output: rmarkdown::tufte_handout
+---
+
+# Average MS spectra
+
+```{r knitr_options, cache=FALSE, echo=FALSE}
+knitr::opts_chunk$set(error=T, warning=F, message=F, size='tiny', echo=F)
+```
+
+Load sample sectra. All from one peak at 14.54 min of the file: \
+`WEB346_A_3_pMS2,HCD_317,303.mzXML`.
+
+```{r load_data, fig.height=8, fig.width=6, fig.cap="Four MS2 spectra (CID.45.eV@mz.317) of peak at 15.54 min from file WEB346\\_A\\_3\\_pMS2,HCD\\_317,303.mzXML."}
+library(mzR)
+library(magrittr)
+
+file <- "/media/mori/Stuff/LCMS/WEB2015-II/MzXML/WEB346_A_3_pMS2,HCD_317,303.mzXML"
+
+MS<-openMSfile(file)
+
+## get multiple spectra around the peak rt=14.54 min (dimethyl-ED), scan no 3643
+i<- 3643
+spectrum <- peaks(MS, c(i+seq(from=-4, by = 4, length.out = 4)))
+
+layout(matrix(c(1,2,3,4),4,1))
+par(mar = c(4,4,1,2))
+for(spec in spectrum){
+  plot(spec, type="h", xlab="mz", ylab="int", xlim=c(75,320))
+}
+```
+
+```{r, fig.margin=T, fig.cap="All spectra overlaid on one plot."}
+layout(1)
+plot(spectrum[[1]], type="h", xlab="mz", ylab="int", xlim=c(75,320))
+for(spec in spectrum[2:length(spectrum)]){
+  lines(spec, type="h", xlab="mz", ylab="int", xlim=c(75,320))
+}
+```
+
+## Algorithm for averaging
+
+1) bin individual spectra in bins with fixed size (e.g. 0.001 m/z)
+2) create spectramatrix, fill empty bins with 0 (no ions detected means 0 intensity, not NA)
+3) average the columns to obtain mean spectrum
+
+```{r, echo=T, size='tiny'}
+moveAVG <- function(spectra, cuts=0.001, MS = F){
+  ## calculate bins freom spectra and cutsize
+  mzmax <- lapply(spectra, function(x)x[,1]) %>% unlist
+  mzmax <- mzmax[!is.na(mzmax)]
+  mzmin <- mzmax %>% min %>% floor
+  mzmax %<>% max %>% ceiling
+  breaks <- seq(from=mzmin, to=mzmax, cuts)
+  
+  ## bin spectra and combine intoi matrix
+  mat <- lapply(spectra, function(x) {
+    n <- .bincode(x[,1], breaks=breaks, include.lowest = T)
+    
+    if(MS) tmp <- matrix(data = c(breaks, rep(0, length(breaks))), ncol = 2, byrow = F)
+    else tmp <- matrix(data = c(breaks, rep(NA, length(breaks))), ncol = 2, byrow = F)
+    
+    tmp[,2][n[!is.na(n)]] <- x[,2][!is.na(n)]
+    return(tmp[,2])
+    }) %>% unlist %>% matrix(., nrow=length(spectra), byrow = T)
+  
+  ## calculate column means
+  mat <- colMeans(mat, na.rm = T)
+  if(MS) IND <- -which(mat == 0)
+  else IND <- -which(is.na(mat))
+  
+  ## return spectrum, remove data that is NA
+  return(matrix(c(breaks[IND], mat[IND]), ncol=2))
+  }
+```
+
+## test algorithm
+
+Several smoothed spectra show, that a cutsize of 0.001 is sufficient to bin the split peaks at m/z 191.0701 and 153.018.
+```{r, fig.height=4, fig.width=7, results='hide', fig.cap=c("binsize: 0.0001", "binsize: 0.001", "binsize: 0.01", "binsize: 0.1")}
+layout(1)
+cuts <- c( 0.0001, 0.001, 0.01, 0.1)
+cutoff <- 0.1
+for(i in cuts){
+  tmp <- moveAVG(spectrum, cuts=i, MS=T) %T>% plot(., ylab="avg int", xlab="m/z", type="h")
+  tmp <- tmp[which(tmp[,2]/max(tmp[,2]) >= cutoff),]
+  text(tmp, label=tmp[,1], adj=c(0,1), cex=0.65, font=1)
+}
+```
+
+
+
+
+```{r, eval=FALSE}
+a <- seq(0,100,by=0.1)
+
+lst <- vector("list")
+for(i in 1:4){
+lst<-append(lst, list(jitter(a)))
+}
+
+lst <- lapply(lst, function(x){
+  s<-sample(5, 1, replace = T)
+  if(s == 1) matrix(c(x, x+1), ncol=2)
+  else if(s == 2) matrix(c(x, x*3), ncol=2)
+  else if(s == 3) matrix(c(x, x^2), ncol=2)
+  else if(s == 4) matrix(c(x, x*0.5), ncol=2)
+  else if(s == 5) matrix(c(x, x^(1/2)), ncol=2)
+  else return(s)
+})
+
+layout(matrix(c(1,2,3,4), 4, 1))
+for(l in lst){
+  plot(l, type="l")
+}
+
+a <- moveAVG(lst, cuts=0.1, MS=T) %T>% plot(., type="l")
+filter(a, rep(0.01, 100), sides = 2)[,2] %>% plot
+
+a <- moveAVG(lst, cuts=0.1, MS=F) %T>% plot(., type="l")
+filter(a, rep(0.01, 100), sides = 2)[,2] %>% plot
+```
+
+
+
+
+
